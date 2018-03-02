@@ -1,0 +1,25 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<th:block th:replace="fragments/layout :: head"></th:block>
+
+<title>Configuration Saved</title>
+
+</head>
+<body>
+	<div th:replace="fragments/layout :: header"></div>
+	<div class="container-fluid">
+
+		<h2>SMS Configuration</h2>
+		<div>
+			Instance ID: <span th:text="${instance.instanceConfiguration.instanceId}"></span>
+		</div>
+		<div>
+			SMS Body: <span th:text="${instance.instanceConfiguration.smsBody}"></span>
+		</div>
+		<hr />
+		<div>You may now close this window...</div>
+	</div>
+
+</body>
+</html>

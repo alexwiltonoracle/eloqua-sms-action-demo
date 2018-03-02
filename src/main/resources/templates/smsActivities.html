@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+
+<th:block th:replace="fragments/layout :: head"></th:block>
+
+<title>SMS Activities</title>
+
+</head>
+<body>
+
+
+	<div th:replace="fragments/layout :: header"></div>
+
+	<div class="container-fluid">
+		<h2>SMS Activities</h2>
+
+		<table class="table">
+			<tr>
+				<th>Instance ID</th>
+				<th>Status</th>
+				<th>Contact ID</th>
+				<th>Mobile Number</th>
+				<th>Email Address</th>
+				<th>SMS Message</th>
+				<th></th>
+			</tr>
+
+			<th:block th:each="a : ${smsActivities}">
+
+				<tr>
+					<td th:text="${a.instanceId}"></td>
+					<td th:text="${a.status}"></td>
+					<td th:text="${a.contactId}"></td>
+					<td th:text="${a.mobileNumber}"></td>
+					<td th:text="${a.emailAddress}"></td>
+					<td th:text="${a.message}"></td>
+					<td></td>
+				</tr>
+			</th:block>
+
+		</table>
+		<a class="btn btn-success" th:href="@{/ui/completeAll}">Send
+			All</a>
+
+	</div>
+
+</body>
+</html>
