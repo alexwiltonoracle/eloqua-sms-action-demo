@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.oracle.eloqua.appframework.bulkapi.EloquaApiConnector;
 import com.oracle.eloqua.appframework.bulkapi.EloquaBulkApi;
 import com.oracle.eloqua.appframework.entity.InstanceConfiguration;
 import com.oracle.eloqua.appframework.enums.InstanceStatus;
@@ -30,6 +31,9 @@ public class ActionServiceInstancePool {
 
 	@Autowired
 	protected EloquaBulkApi eloquaBulkApi;
+	
+	@Autowired
+	private EloquaApiConnector eloquaApiConnector;
 
 	protected List<ActionServiceInstance> serviceInstances = new ArrayList<ActionServiceInstance>();
 
@@ -40,7 +44,7 @@ public class ActionServiceInstancePool {
 		if (serviceInstance == null) {
 
 			serviceInstance = buildServiceInstance();
-			serviceInstance.setup(eloquaBulkApi, instanceConfiguration);
+			serviceInstance.setup(eloquaBulkApi, eloquaApiConnector, instanceConfiguration);
 
 			serviceInstances.add(serviceInstance);
 
@@ -65,7 +69,7 @@ public class ActionServiceInstancePool {
 	}
 
 	public ActionServiceInstance create(String installId, String instanceId, int siteId, String userName) {
-		InstanceConfiguration instanceConfiguration = new InstanceConfiguration(ServiceType.ACTION, InstanceStatus.LIVE, installId, instanceId, siteId,
+		InstanceConfiguration instanceConfiguration = new InstanceConfiguration(ServiceType.ACTION, InstanceStatus.ACTIVE, installId, instanceId, siteId,
 				userName);
 		instanceConfigurationRepository.save(instanceConfiguration);
 
@@ -74,11 +78,11 @@ public class ActionServiceInstancePool {
 		return result;
 	}
 
-	public void notification(String instanceId, String notifyBody) {
+	public void notification(int campaignId, String instanceId, Integer executionId, String notifyBody) {
 		ActionServiceInstance serviceInstance = findServiceInstance(instanceId);
 
 		if (serviceInstance != null) {
-			serviceInstance.notify(notifyBody);
+			serviceInstance.notify(campaignId, executionId, notifyBody);
 		}
 
 	}
@@ -90,7 +94,7 @@ public class ActionServiceInstancePool {
 		if (serviceInstance != null) {
 			log.info("Stopping service instance");
 			serviceInstance.stop();
-			serviceInstances.remove(instanceId);
+			serviceInstances.remove(serviceInstance);
 		}
 
 		InstanceConfiguration instance = instanceConfigurationRepository.findOne(instanceId);
@@ -151,6 +155,12 @@ public class ActionServiceInstancePool {
 				
 		ActionServiceInstance actionService = findServiceInstance(instanceId);
 		actionService.setInstanceConfiguration(instanceConfiguration);
+		
+		if (actionService.configured()) {
+			
+		} else {
+			
+		}
 
 		return actionService;
 	}

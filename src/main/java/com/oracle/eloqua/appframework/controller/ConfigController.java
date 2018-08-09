@@ -27,9 +27,10 @@ public class ConfigController {
 	// Triggered when the configure button is pressed on the service instance
 	@RequestMapping(value = "/smsService/configure", method = RequestMethod.GET)
 	public String loadForm(HttpServletRequest request, String instanceId, Model model) {
-		log.info("Load configuration form for instanceId: " + instanceId);
 
 		Util.logIncomingRequest(log, request);
+
+		log.info("Load configuration form for instanceId: " + instanceId);
 		
 		ActionServiceInstance instance = actionServicePool.findServiceInstance(instanceId);
 		
@@ -40,20 +41,21 @@ public class ConfigController {
 
 	@RequestMapping(value = "/smsService/configure", method = RequestMethod.POST)
 	public String submitForm(HttpServletRequest request, String instanceId, String smsBody, Model model) {
+		
+		Util.logIncomingRequest(log, request);
+		
 		log.info("Submit configuration form...");
 
 		log.info("Saving configuration. InstanceId = " + instanceId + ", SMSBody=" + smsBody);
 
 		ActionServiceInstance instance = actionServicePool.saveConfiguration(instanceId, smsBody);
-
-		Util.logIncomingRequest(log, request);
-
+		
 		model.addAttribute("instance", instance);
-
-
-
-		return "configClose";
-
+		
+		if (instance.configured()) {
+			return "configClose";
+		} else {
+			return "configForm";
+		}
 	}
-
 }

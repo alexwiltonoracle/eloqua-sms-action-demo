@@ -7,12 +7,15 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpMethod;
 
+import com.oracle.eloqua.appframework.bulkapi.EloquaApiConnector;
 import com.oracle.eloqua.appframework.bulkapi.EloquaBulkApi;
 import com.oracle.eloqua.appframework.entity.InstanceConfiguration;
 import com.oracle.eloqua.appframework.entity.SMSActivity;
 import com.oracle.eloqua.appframework.enums.RecordStatus;
 import com.oracle.eloqua.appframework.repository.SMSActivityRepository;
+import com.oracle.eloqua.appframework.util.Util;
 
 public class ActionServiceInstance {
 
@@ -22,15 +25,20 @@ public class ActionServiceInstance {
 
 	private EloquaBulkApi eloquaBulkApi;
 
+	private EloquaApiConnector eloquaApiConnector;
+
 	private InstanceConfiguration instanceConfiguration;
 
-	public void setup(EloquaBulkApi eloquaBulkApi, InstanceConfiguration instanceConfiguration) {
+	public void setup(EloquaBulkApi eloquaBulkApi, EloquaApiConnector eloquaApiConnector,
+			InstanceConfiguration instanceConfiguration) {
 		this.eloquaBulkApi = eloquaBulkApi;
 
 		this.instanceConfiguration = instanceConfiguration;
+
+		this.eloquaApiConnector = eloquaApiConnector;
 	}
 
-	private JSONObject bulkApiDefinition(String status) {
+	private JSONObject bulkApiDefinition(String status, int executionId) {
 		String instanceIdNoDash = instanceConfiguration.getInstanceId().replace("-", "");
 
 		String definitionName = String.format("SMS Action Bulk Import [Instance=%s, result=%s]",
@@ -42,7 +50,8 @@ public class ActionServiceInstance {
 
 			fields.put("contactId", "{{Contact.Id}}");
 
-			syncActions.put("destination", "{{ActionInstance(" + instanceIdNoDash + ")}}");
+			syncActions.put("destination",
+					"{{ActionInstance(" + instanceIdNoDash + ").Execution[" + executionId + "]}}");
 			syncActions.put("action", "setStatus");
 			syncActions.put("status", status);
 
@@ -67,8 +76,17 @@ public class ActionServiceInstance {
 		log.info("SMS Body: " + smsBody);
 	}
 
-	public void notify(String notifyBody) {
+	public void notify(int campaignId, Integer executionId, String notifyBody) {
+
 		try {
+			String campaignDetailsString = eloquaApiConnector.doRest("2.0", "assets/campaign/" + campaignId,
+					instanceConfiguration.getInstallId(), HttpMethod.GET, null);
+
+			JSONObject campaignDetails = new JSONObject(campaignDetailsString);
+
+			String campaignRegion = campaignDetails.getString("region");
+			String campaignName = campaignDetails.getString("name");
+
 			JSONObject json = new JSONObject(notifyBody);
 
 			JSONArray items = json.getJSONArray("items");
@@ -83,6 +101,9 @@ public class ActionServiceInstance {
 				smsActivity.setMobileNumber(item.getString("Mobile"));
 				smsActivity.setMessage(instanceConfiguration.getSmsBody());
 				smsActivity.setStatus(RecordStatus.NEW);
+				smsActivity.setCampaignName(campaignName);
+				smsActivity.setCampaignRegion(campaignRegion);
+				smsActivity.setExecutionId(executionId);
 
 				smsActivityRepository.save(smsActivity);
 
@@ -113,27 +134,30 @@ public class ActionServiceInstance {
 
 	private void doBulkUpload(List<SMSActivity> smsActivities) throws JSONException {
 
-		JSONObject bulkApiDefinition = bulkApiDefinition("complete");
+		if (smsActivities.size() > 0) {
+			JSONObject bulkApiDefinition = bulkApiDefinition("complete", smsActivities.get(0).getExecutionId());
 
-		JSONArray bulkApiPayload = new JSONArray();
+			JSONArray bulkApiPayload = new JSONArray();
 
-		for (SMSActivity smsActivity : smsActivities) {
-			smsActivity.setStatus(RecordStatus.UPLOAD_IN_PROGRESS);
-			smsActivityRepository.save(smsActivity);
-			log.info("Processing SMS Activity: " + smsActivity.toString());
+			for (SMSActivity smsActivity : smsActivities) {
+				smsActivity.setStatus(RecordStatus.UPLOAD_IN_PROGRESS);
+				smsActivityRepository.save(smsActivity);
+				log.info("Processing SMS Activity: " + smsActivity.toString());
 
-			JSONObject jsonEmail = new JSONObject();
-			jsonEmail.put("contactId", smsActivity.getContactId());
-			bulkApiPayload.put(jsonEmail);
+				JSONObject jsonEmail = new JSONObject();
+				jsonEmail.put("contactId", smsActivity.getContactId());
+				bulkApiPayload.put(jsonEmail);
 
-		}
+			}
 
-		eloquaBulkApi.doUpload(bulkApiDefinition.toString(), bulkApiPayload.toString(), "contacts/imports",
-				instanceConfiguration.getInstallId());
+			eloquaBulkApi.doUpload(bulkApiDefinition.toString(), bulkApiPayload.toString(), "contacts/imports",
+					instanceConfiguration.getInstallId());
 
-		for (SMSActivity smsActivity : smsActivities) {
-			smsActivity.setStatus(RecordStatus.UPLOAD_COMPLETE);
-			smsActivityRepository.save(smsActivity);
+			for (SMSActivity smsActivity : smsActivities) {
+				smsActivity.setStatus(RecordStatus.UPLOAD_COMPLETE);
+				smsActivityRepository.save(smsActivity);
+
+			}
 
 		}
 
@@ -144,7 +168,7 @@ public class ActionServiceInstance {
 		// do anything here to prepare the service for shutdown
 	}
 
-	public JSONObject buildCreateResponse() {
+	public JSONObject buildCreateResponse(boolean requiresConfiguration) {
 
 		try {
 
@@ -155,8 +179,10 @@ public class ActionServiceInstance {
 
 			JSONObject createResponse = new JSONObject();
 			createResponse.put("recordDefinition", recordDefinition);
-			createResponse.put("requiresConfiguration", false);
-			log.info(createResponse.toString(2));
+			createResponse.put("requiresConfiguration", requiresConfiguration);
+
+			Util.logPrettyJson(log, "Create Response:", createResponse);
+
 			return createResponse;
 		} catch (JSONException e) {
 			e.printStackTrace();
@@ -203,10 +229,31 @@ public class ActionServiceInstance {
 
 	public void setInstanceConfiguration(InstanceConfiguration instanceConfiguration) {
 		this.instanceConfiguration = instanceConfiguration;
+
+		// set if the service requires configuration
+
+		boolean requiresConfiguration = !configured();
+
+		JSONObject putBody = buildCreateResponse(requiresConfiguration);
+
+		eloquaApiConnector.doCloud("1.0", "actions/instances/" + instanceConfiguration.getInstanceId(),
+				instanceConfiguration.getInstallId(), HttpMethod.PUT, putBody.toString());
+
 	}
 
 	public boolean isInstance(String instanceId) {
 		return instanceId.equals(instanceConfiguration.getInstanceId());
+	}
+
+	public boolean configured() {
+		if (Util.nullOrEmpty(instanceConfiguration.getSmsBody())) {
+			log.info("Service not fully configured");
+			return false;
+		} else {
+			log.info("Service fully configured");
+			return true;
+		}
+
 	}
 
 }

@@ -1,5 +1,6 @@
 package com.oracle.eloqua.appframework.auth;
 
+import java.util.Date;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
@@ -23,6 +24,7 @@ import org.springframework.web.client.RestTemplate;
 import com.oracle.eloqua.appframework.entity.AppInstallation;
 import com.oracle.eloqua.appframework.repository.AppInstallationRepository;
 import com.oracle.eloqua.appframework.rest.RestTemplateFactory;
+import com.oracle.eloqua.appframework.util.Util;
 
 @Component
 @EnableAutoConfiguration
@@ -47,7 +49,7 @@ public class OAuth2SessionManager {
 	// The user has clicked to install the app. This created the database
 	// instance of the app, along with the callback URL to be triggered once the
 	// OAuth process has completed.
-	public void startInstall(String installId, String appId, String eloquaCallbackUrl) {
+	public void startInstall(String installId, String appId, String userName, String eloquaCallbackUrl) {
 
 		AppInstallation appInstallation = appInstallationRepository.findOne(installId);
 
@@ -57,6 +59,8 @@ public class OAuth2SessionManager {
 			appInstallation.setAppId(appId);
 			appInstallation.setEloquaCallbackUrl(eloquaCallbackUrl);
 		}
+		
+		appInstallation.setUserName(userName);
 
 		appInstallationRepository.save(appInstallation);
 
@@ -153,7 +157,8 @@ public class OAuth2SessionManager {
 
 			ResponseEntity<String> response = restTemplate.exchange(tokenUrl, HttpMethod.POST, request, String.class);
 
-			log.info("refresh token request body: " + response.getBody());
+			Util.logPrettyJson(log, "refresh token request body: ", response.getBody());
+
 			JSONObject authResponse = new JSONObject(response.getBody());
 
 			String accessToken = authResponse.getString("access_token");

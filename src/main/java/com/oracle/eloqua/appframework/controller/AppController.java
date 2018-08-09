@@ -25,17 +25,18 @@ public class AppController {
 	private OAuth2SessionManager oAuth2SessionManager;
 
 	@RequestMapping("/enable")
-	public void enable(String installId, String appId, String callbackUrl, HttpServletResponse response,
-			HttpServletRequest request) throws IOException {
+	public void enable(String installId, String appId, String callbackUrl, String userName,
+			HttpServletResponse response, HttpServletRequest request) throws IOException {
+		Util.logIncomingRequest(log, request);
 
 		log.info("Enabling app...");
-		Util.logIncomingRequest(log, request);
 
 		log.info("   installId    : " + installId);
 		log.info("   appId        : " + appId);
+		log.info("   userName     : " + userName);
 		log.info("   callbackUrl  : " + callbackUrl);
 
-		oAuth2SessionManager.startInstall(installId, appId, callbackUrl);
+		oAuth2SessionManager.startInstall(installId, appId, userName, callbackUrl);
 
 		response.sendRedirect(oAuth2SessionManager.authorizeUrl(installId));
 
@@ -43,24 +44,25 @@ public class AppController {
 
 	@RequestMapping("/configure")
 	public String configure(String installId, String appId, HttpServletRequest request) {
-		log.info("Configuring app...");
 		Util.logIncomingRequest(log, request);
+		log.info("Configuring app...");
+
 		return "";
 
 	}
 
 	@RequestMapping("/uninstall")
 	public String uninstall(String installId, String appId, HttpServletRequest request) {
-		log.info("Uninstalling app...");
 		Util.logIncomingRequest(log, request);
+		log.info("Uninstalling app...");
 		return "";
 
 	}
 
 	@RequestMapping("/status")
 	public String status(HttpServletRequest request) {
-		log.info("App status...");
 		Util.logIncomingRequest(log, request);
+		log.info("App status...");
 		return "";
 
 	}

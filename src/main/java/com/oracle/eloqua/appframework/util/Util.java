@@ -5,6 +5,8 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 
 public class Util {
@@ -40,26 +42,43 @@ public class Util {
 
 			log.info(String.format("      >   %s = %s", p.getKey(), Arrays.toString(p.getValue())));
 		}
-		
-		log.info("   >   Request Body:");
-		log.info("         " + requestBody);;
-		
-		/*if ("POST".equalsIgnoreCase(request.getMethod())) 
-		{
-		   try {
-			String test = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
-			log.info("   >   POST Body:");
-			log.info(test);
-			log.info("   >   END POST Body:");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		}
-		//log.info("   >   Form Params:");
 
-		*/
+		logPrettyJson(log, "   >   Request Body:", requestBody);
+
+		;
+
+		/*
+		 * if ("POST".equalsIgnoreCase(request.getMethod())) { try { String test =
+		 * request.getReader().lines().collect(Collectors.joining(System.lineSeparator()
+		 * )); log.info("   >   POST Body:"); log.info(test);
+		 * log.info("   >   END POST Body:"); } catch (IOException e) { // TODO
+		 * Auto-generated catch block e.printStackTrace(); } }
+		 * //log.info("   >   Form Params:");
+		 * 
+		 */
 		log.info("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
-		
+
+	}
+
+	public static void logPrettyJson(Logger log, String msg, JSONObject j) throws JSONException {
+		log.info(msg + "\n" + j.toString(4));
+
+	}
+
+	public static void logPrettyJson(Logger log, String msg, String s) {
+
+		try {
+			JSONObject json = new JSONObject(s);
+
+			logPrettyJson(log, msg, json);
+
+		} catch (Exception e) {
+			log.info(msg + " " + s);
+		}
+
+	}
+
+	public static boolean nullOrEmpty(String s) {
+		return s == null || s.equals("");
 	}
 }

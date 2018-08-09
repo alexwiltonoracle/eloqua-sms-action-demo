@@ -22,6 +22,8 @@
 				<th>Contact ID</th>
 				<th>Mobile Number</th>
 				<th>Email Address</th>
+				<th>Campaign Name</th>
+				<th>Campaign Region</th>
 				<th>SMS Message</th>
 				<th></th>
 			</tr>
@@ -34,14 +36,15 @@
 					<td th:text="${a.contactId}"></td>
 					<td th:text="${a.mobileNumber}"></td>
 					<td th:text="${a.emailAddress}"></td>
+					<td th:text="${a.campaignName}"></td>
+					<td th:text="${a.campaignRegion}"></td>
 					<td th:text="${a.message}"></td>
 					<td></td>
 				</tr>
 			</th:block>
 
 		</table>
-		<a class="btn btn-success" th:href="@{/ui/completeAll}">Send
-			All</a>
+		<a class="btn btn-success" th:href="@{/ui/completeAll}">Send All</a>
 
 	</div>
 

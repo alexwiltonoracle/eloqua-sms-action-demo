@@ -32,17 +32,17 @@ public class ActionServiceController {
 		log.info("Incoming create request...");
 		Util.logIncomingRequest(log, request);
 		ActionServiceInstance service = actionServicePool.create(installId, instanceId, siteId, userName);
-		JSONObject createResponse = service.buildCreateResponse();
+		JSONObject createResponse = service.buildCreateResponse(true);
 		return createResponse.toString();
 	}
 
 	// Triggered when an event happens on the instance (activated, draft etc...)
 	@RequestMapping("/action/notify")
-	public String notify(HttpServletResponse response, String instanceId, @RequestBody String requestBody,
+	public String notify(HttpServletResponse response, String instanceId, Integer assetId, Integer executionId, @RequestBody String requestBody,
 			HttpServletRequest request) {
 		log.info("Incoming notify request...");
 		Util.logIncomingRequest(log, request, requestBody);
-		actionServicePool.notification(instanceId, requestBody);
+		actionServicePool.notification(assetId, instanceId, executionId, requestBody);
 		response.setStatus(HttpStatus.SC_NO_CONTENT);
 		return null;
 	}

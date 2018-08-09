@@ -41,7 +41,7 @@ public class EloquaBulkApi {
 				e.printStackTrace();
 			}
 
-			String statusResponse = eloquaApiConnector.doGet(syncUri, installId);
+			String statusResponse = eloquaApiConnector.doBulkGet(syncUri, installId);
 
 			JSONObject statusResponseJson = new JSONObject(statusResponse);
 
@@ -69,7 +69,7 @@ public class EloquaBulkApi {
 	}
 
 	private void retrieveLog(String installId, String syncUri) throws JSONException {
-		String syncLog = eloquaApiConnector.doGet(syncUri + "/logs", installId);
+		String syncLog = eloquaApiConnector.doBulkGet(syncUri + "/logs", installId);
 		log.info("Warning details: " + syncLog);
 	}
 
@@ -77,7 +77,7 @@ public class EloquaBulkApi {
 		JSONObject syncJsonBody = new JSONObject();
 		syncJsonBody.put("syncedInstanceURI", createDefinitionUri);
 
-		String syncResponse = eloquaApiConnector.doPost(syncJsonBody.toString(), "syncs", installId);
+		String syncResponse = eloquaApiConnector.doBulkPost(syncJsonBody.toString(), "syncs", installId);
 
 		JSONObject syncResponseJson = new JSONObject(syncResponse);
 
@@ -87,11 +87,11 @@ public class EloquaBulkApi {
 
 	private void uploadPayload(String bulkApiPayload, String installId, String createDefinitionUri)
 			throws JSONException {
-		eloquaApiConnector.doPost(bulkApiPayload, createDefinitionUri + "/data", installId);
+		eloquaApiConnector.doBulkPost(bulkApiPayload, createDefinitionUri + "/data", installId);
 	}
 
 	private String createDefinition(String bulkApiDefinition, String installId) throws JSONException {
-		String createResponse = eloquaApiConnector.doPost(bulkApiDefinition, "contacts/imports", installId);
+		String createResponse = eloquaApiConnector.doBulkPost(bulkApiDefinition, "contacts/imports", installId);
 
 		JSONObject responseJson = new JSONObject(createResponse);
 

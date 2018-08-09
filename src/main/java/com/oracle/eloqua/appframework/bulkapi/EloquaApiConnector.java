@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import com.oracle.eloqua.appframework.auth.OAuth2SessionManager;
+import com.oracle.eloqua.appframework.util.Util;
 
 @Component
 public class EloquaApiConnector {
@@ -23,7 +24,31 @@ public class EloquaApiConnector {
 	@Autowired
 	private OAuth2SessionManager oAuth2SessionManager;
 
-	public String doPost(String body, String path, String installId) throws JSONException {
+	public String doBulkPost(String body, String path, String installId) throws JSONException {
+
+		String url = fullBulkPath(path);
+
+		return eloquaApiExchange(installId, url, HttpMethod.POST, body);
+
+	}
+
+	public String doBulkGet(String path, String installId) throws JSONException {
+
+		String url = fullBulkPath(path);
+
+		return eloquaApiExchange(installId, url, HttpMethod.GET, null);
+
+	}
+
+	public String doRest(String version, String path, String installId, HttpMethod method, String body) {
+
+		String url = fullRestPath(version, path);
+
+		return eloquaApiExchange(installId, url, method, body);
+
+	}
+
+	private String eloquaApiExchange(String installId, String url, HttpMethod method, String body) {
 
 		logDivide();
 
@@ -31,20 +56,25 @@ public class EloquaApiConnector {
 
 		HttpHeaders requestHeaders = oAuth2SessionManager.headersForInstallBasedRequest(installId);
 
-		HttpEntity<String> requestEntity = new HttpEntity<String>(body, requestHeaders);
+		HttpEntity<String> requestEntity;
 
-		String url = baseUrl + "bulk/2.0/" + path;
+		if (method.equals(HttpMethod.GET)) {
+			requestEntity = new HttpEntity<String>(requestHeaders);
+		} else {
+			requestEntity = new HttpEntity<String>(body, requestHeaders);
+		}
 
-		log("Calling POST");
-		log("   > URL            : " + url);
-		log("   > Request Body   : " + body);
+		log.info("Calling " + method);
+		log.info("   > URL           : " + url);
+		if (body != null) {
+			Util.logPrettyJson(log, "   > Request Body   : ", body);
+		}
 
-		ResponseEntity<String> createResponse = restTemplate.exchange(url, HttpMethod.POST, requestEntity,
-				String.class);
+		ResponseEntity<String> createResponse = restTemplate.exchange(url, method, requestEntity, String.class);
 
-		log("POST Response");
-		log("   > Status         : " + createResponse.getStatusCodeValue());
-		log("   > Response Body  : " + createResponse.getBody());
+		log.info("GET Response");
+		log.info("   > Status        : " + createResponse.getStatusCodeValue());
+		Util.logPrettyJson(log, "   > Response Body : ", createResponse.getBody());
 
 		logDivide();
 
@@ -52,43 +82,43 @@ public class EloquaApiConnector {
 
 	}
 
-	public String doGet(String path, String installId) throws JSONException {
-
-		logDivide();
-
-		RestTemplate restTemplate = new RestTemplate();
-
-		HttpHeaders requestHeaders = oAuth2SessionManager.headersForInstallBasedRequest(installId);
-
-		HttpEntity<String> requestEntity = new HttpEntity<String>(requestHeaders);
-
+	private String fullBulkPath(String path) {
 		if (!path.startsWith("/")) {
 			path = "/" + path;
 		}
 
 		String url = baseUrl + "bulk/2.0" + path;
-
-		log("Calling GET");
-		log("   > URL           : " + url);
-
-		ResponseEntity<String> createResponse = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
-
-		log("GET Response");
-		log("   > Status        : " + createResponse.getStatusCodeValue());
-		log("   > Response Body : " + createResponse.getBody());
-
-		logDivide();
-
-		return createResponse.getBody();
-
+		return url;
 	}
 
-	private void log(String msg) {
-		log.info("EloquaApi: " + msg);
+	private String fullRestPath(String version, String path) {
+		if (!path.startsWith("/")) {
+			path = "/" + path;
+		}
+
+		String url = baseUrl + "REST/" + version + path;
+		return url;
+	}
+
+	private String fullCloudPath(String version, String path) {
+		if (!path.startsWith("/")) {
+			path = "/" + path;
+		}
+
+		String url = baseUrl + "cloud/" + version + path;
+		return url;
 	}
 
 	private void logDivide() {
-		log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+		log.info("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+	}
+
+	public String doCloud(String version, String path, String installId, HttpMethod method, String body) {
+
+		String url = fullCloudPath(version, path);
+
+		return eloquaApiExchange(installId, url, method, body);
+
 	}
 
 }

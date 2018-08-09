@@ -1,9 +1,14 @@
 package com.oracle.eloqua.appframework.entity;
 
+import java.util.Date;
+
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.Id;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import com.oracle.eloqua.appframework.enums.InstanceStatus;
 import com.oracle.eloqua.appframework.enums.ServiceType;
@@ -24,16 +29,24 @@ public class InstanceConfiguration {
 	private String userName;
 	private String smsBody;
 
+	@CreationTimestamp
+	private Date createDateTime;
+
+	@UpdateTimestamp
+	private Date updateDateTime;
+
 	public InstanceConfiguration() {
 	}
 
-	public InstanceConfiguration(ServiceType serviceType, InstanceStatus instanceStatus, String installId, String instanceId, int siteId, String userName) {
+	public InstanceConfiguration(ServiceType serviceType, InstanceStatus instanceStatus, String installId,
+			String instanceId, int siteId, String userName) {
 		this.installId = installId;
 		this.instanceId = instanceId;
 		// this.appId = params.getAppId();
 		this.siteId = siteId;
 		this.userName = userName;
 		this.serviceType = serviceType;
+		this.instanceStatus = instanceStatus;
 	}
 
 	@Override

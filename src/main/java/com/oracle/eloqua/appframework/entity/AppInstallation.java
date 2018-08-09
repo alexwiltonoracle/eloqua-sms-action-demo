@@ -1,7 +1,12 @@
 package com.oracle.eloqua.appframework.entity;
 
+import java.util.Date;
+
 import javax.persistence.Entity;
 import javax.persistence.Id;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 public class AppInstallation {
@@ -9,9 +14,16 @@ public class AppInstallation {
 	@Id
 	private String installId;
 	private String appId;
+	private String userName;
 	private String eloquaCallbackUrl;
 	private String accessToken;
 	private String refreshToken;
+
+	@CreationTimestamp
+	private Date createDateTime;
+
+	@UpdateTimestamp
+	private Date updateDateTime;
 
 	public AppInstallation() {
 	}
@@ -60,6 +72,14 @@ public class AppInstallation {
 
 	public void setEloquaCallbackUrl(String eloquaCallbackUrl) {
 		this.eloquaCallbackUrl = eloquaCallbackUrl;
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
 	}
 
 }
